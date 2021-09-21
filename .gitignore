@@ -39,3 +39,4 @@ buildNumber.properties
 
 ./db_login.env
 .idea/
+./datasett/
