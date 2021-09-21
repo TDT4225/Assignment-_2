@@ -37,5 +37,5 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 
 
-db_login.env
+./db_login.env
 .idea/
