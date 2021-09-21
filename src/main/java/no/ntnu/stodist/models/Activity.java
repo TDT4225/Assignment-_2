@@ -4,12 +4,28 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 public class Activity {
+    private static int idCounter = 0;
+
+    private static synchronized int getNextId() {
+        idCounter = idCounter + 1;
+        return idCounter;
+    }
+
+    public Activity() {
+        this.id = getNextId();
+    }
+
     private int id;
     private List<TrackPoint> trackPoints;
     private String transportationMode;
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
+
+    public Optional<String> getTransportationMode() {
+        return Optional.ofNullable(transportationMode);
+    }
 }
