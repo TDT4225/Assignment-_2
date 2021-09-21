@@ -61,9 +61,8 @@ public class Assignment2Tasks {
 
         List<User> users = datasetParser.parseDataset(datasetDir);
 
-        StringBuilder userQueryStringBuilder  = new StringBuilder(userQueryBase);
-        StringBuilder actQueryStringBuilder   = new StringBuilder(actQueryBase);
-        StringBuilder trackQueryStringBuilder = new StringBuilder(trackQueryBase);
+        StringBuilder userQueryStringBuilder = new StringBuilder(userQueryBase);
+        StringBuilder actQueryStringBuilder  = new StringBuilder(actQueryBase);
 
         // insert the user values
         users.forEach(user -> userQueryStringBuilder.append("('")
@@ -129,9 +128,12 @@ public class Assignment2Tasks {
 
 
             try {
-                String query = userQueryBase.toString();
+                String query = userPointQueryStringB.toString();
                 if (query.length() > trackQueryBase.length() + 10) {
-                    connection.createStatement().execute(userPointQueryStringB.toString());
+                    var statement = connection.createStatement();
+                    statement.setQueryTimeout(100);
+                    statement.execute(query);
+                    System.out.println("Sucsessfully added data for " + user.getId());
                 }
             } catch (SQLException e) {
                 e.printStackTrace();

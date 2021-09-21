@@ -28,7 +28,7 @@ public class MySqlConnection {
         Connection connection = null;
 
         connection = DriverManager.getConnection(url, dbUser, dbPassword);
-
+        
         return connection;
     }
 
