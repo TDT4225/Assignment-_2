@@ -14,13 +14,11 @@ public class main {
         try {
 
             Connection connection = db_connection.getConnection();
-            SimpleStopwatch.start("a");
-            Assignment2Tasks.crateTables(connection);
-            Assignment2Tasks.insertData(connection);
+            //            Assignment2Tasks.crateTables(connection);
+            //            Assignment2Tasks.insertData(connection);
+            Assignment2Tasks.task1(connection);
 
-            SimpleStopwatch.stop("a");
-            SimpleStopwatch.show("a");
-        } catch (IOException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

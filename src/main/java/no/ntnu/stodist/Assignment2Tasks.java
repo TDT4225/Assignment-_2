@@ -4,12 +4,14 @@ import lombok.Data;
 import no.ntnu.stodist.models.Activity;
 import no.ntnu.stodist.models.TrackPoint;
 import no.ntnu.stodist.models.User;
+import no.ntnu.stodist.simpleTable.Column;
 import no.ntnu.stodist.simpleTable.SimpleTable;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -17,12 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-
 public class Assignment2Tasks {
 
 
-    public static double haversine_distance(double lat1, double lat2, double lon1, double lon2)
-    {
+    public static double haversine_distance(double lat1, double lat2, double lon1, double lon2) {
 
         lon1 = Math.toRadians(lon1);
         lon2 = Math.toRadians(lon2);
@@ -32,21 +32,29 @@ public class Assignment2Tasks {
         double dlon = lon2 - lon1;
         double dlat = lat2 - lat1;
         double a = Math.pow(Math.sin(dlat / 2), 2)
-                 + Math.cos(lat1) * Math.cos(lat2)
-                 * Math.pow(Math.sin(dlon / 2), 2);
+                + Math.cos(lat1) * Math.cos(lat2)
+                * Math.pow(Math.sin(dlon / 2), 2);
         double c = 2 * Math.asin(Math.sqrt(a));
 
         double r = 6371;
         return c * r;
     }
-    private static LocalDateTime[]  getTimeOverlap(LocalDateTime t1_start, LocalDateTime t1_end, LocalDateTime t2_start, LocalDateTime t2_end)
-    {
+
+    private static LocalDateTime[] getTimeOverlap(LocalDateTime t1_start,
+                                                  LocalDateTime t1_end,
+                                                  LocalDateTime t2_start,
+                                                  LocalDateTime t2_end
+    ) {
         LocalDateTime start_overlap = t1_start.compareTo(t2_start) <= 0 ? t2_start : t1_start;
-        LocalDateTime end_overlap = t1_end.compareTo(t2_end) <= 0 ? t1_end : t2_end;
+        LocalDateTime end_overlap   = t1_end.compareTo(t2_end) <= 0 ? t1_end : t2_end;
         return new LocalDateTime[]{start_overlap, end_overlap};
     }
-    private static boolean isTimeOverlap(LocalDateTime t1_start, LocalDateTime t1_end, LocalDateTime t2_start, LocalDateTime t2_end)
-    {
+
+    private static boolean isTimeOverlap(LocalDateTime t1_start,
+                                         LocalDateTime t1_end,
+                                         LocalDateTime t2_start,
+                                         LocalDateTime t2_end
+    ) {
         return t1_start.isBefore(t2_end) && t2_start.isBefore(t1_end);
     }
 
@@ -182,6 +190,38 @@ public class Assignment2Tasks {
         });
     }
 
+    private static SimpleTable makeResultSetTable(ResultSet resultSet) throws SQLException {
+        SimpleTable<List<String>> simpleTable = new SimpleTable<>();
+
+        ResultSetMetaData metaData = resultSet.getMetaData();
+
+        List<List<String>> tabelData = new ArrayList<>();
+        List<String>       headerRow = new ArrayList<>();
+        for (int i = 1; i <= metaData.getColumnCount(); i++) {
+            headerRow.add(metaData.getColumnLabel(i));
+        }
+
+        while (resultSet.next()) {
+            List<String> rowData = new ArrayList<>();
+            for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                rowData.add(resultSet.getString(i));
+            }
+            tabelData.add(rowData);
+
+        }
+
+        List<Column<List<String>>> tabelCols = new ArrayList<>();
+        for (int i = 0; i < headerRow.size(); i++) {
+            int finalI = i;
+            tabelCols.add(new Column<>(headerRow.get(i), row -> row.get(finalI)));
+        }
+
+        simpleTable.getCols().addAll(tabelCols);
+        simpleTable.setItems(tabelData);
+        return simpleTable;
+
+
+    }
 
     public static void task1(Connection connection) throws SQLException {
 
@@ -192,18 +232,10 @@ public class Assignment2Tasks {
                           (SELECT COUNT(*) FROM track_point) as tps
                        """;
 
-        ResultSet count = connection.createStatement().executeQuery(query);
-        count.next();
-        SimpleTable<String> st = new SimpleTable<String>();
-        st.display();
-
-        String u = count.getString("users");
-        System.out.println("Users: " + u + "\n");
-        String a = count.getString("activities");
-        System.out.println("Activities: " + a + "\n");
-        String tp = count.getString("tps");
-        System.out.println("TrackPoints: " + tp + "\n");
-
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 1");
+        simpleTable.display();
 
     }
 
@@ -218,8 +250,7 @@ public class Assignment2Tasks {
                               GROUP BY user_id) AS a
                         """;
         ResultSet t = connection.createStatement().executeQuery(query);
-        while(t.next())
-        {
+        while (t.next()) {
             String time = t.getString(1);
             System.out.println(time + "\n");
         }
@@ -239,8 +270,7 @@ public class Assignment2Tasks {
                                                     
                         """;
         ResultSet t = connection.createStatement().executeQuery(query);
-        while(t.next())
-        {
+        while (t.next()) {
             String a = t.getString(1);
             System.out.println(a + "\n");
         }
@@ -253,12 +283,11 @@ public class Assignment2Tasks {
         System.out.println("Task6");
 
         String query = """
-                      
+                                             
                        """;
         ResultSet t = connection.createStatement().executeQuery(query);
 
-        while(t.next())
-        {
+        while (t.next()) {
             break;
         }
 
@@ -280,8 +309,7 @@ public class Assignment2Tasks {
                                                WHERE transportation_mode = "taxi") as c);
                        """;
         ResultSet t = connection.createStatement().executeQuery(query);
-        while(t.next())
-        {
+        while (t.next()) {
             String a = t.getString(1);
             System.out.println(a + "\n");
         }

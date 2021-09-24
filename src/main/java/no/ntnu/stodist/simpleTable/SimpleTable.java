@@ -1,6 +1,7 @@
 package no.ntnu.stodist.simpleTable;
 
 
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.stream.Collectors;
 
