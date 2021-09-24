@@ -238,9 +238,9 @@ public class SimpleTable<T> {
         }
         this.currentDisplayRow = 0;
 
-        String headerRow = this.makeRow(cols.stream().map(Column::getFormattedHeader).collect(Collectors.joining()));
-
-        int tableXSize = headerRow.length();
+        String headerRow  = this.makeRow(cols.stream().map(Column::getFormattedHeader).collect(Collectors.joining()));
+        int    titleLengt = (title == null) ? 0 : title.length() + 4;
+        int    tableXSize = Math.max(headerRow.length(), titleLengt);
 
         displayTableTitle(tableXSize);
 
@@ -340,7 +340,7 @@ public class SimpleTable<T> {
             String printTitle;
             int    rest     = tableXSize - title.length() - 2;
             int    sizeSide = Math.floorDiv(rest, 2);
-            String side     = this.repeat(" ", sizeSide);
+            String side     = repeat("#", sizeSide);
             if (rest % 2 == 0) {
                 printTitle = String.format("%s %s %s", side, title, side);
             } else {

@@ -241,7 +241,6 @@ public class Assignment2Tasks {
 
     public static void task2(Connection connection) throws SQLException {
 
-        System.out.println("Task2");
 
         String query = """
                        SELECT AVG(a.count) AS avg
@@ -249,18 +248,16 @@ public class Assignment2Tasks {
                               FROM activity
                               GROUP BY user_id) AS a
                         """;
-        ResultSet t = connection.createStatement().executeQuery(query);
-        while (t.next()) {
-            String time = t.getString(1);
-            System.out.println(time + "\n");
-        }
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 2");
+        simpleTable.display();
 
 
     }
 
     public static void task4(Connection connection) throws SQLException {
 
-        System.out.println("Task4");
 
         String query = """
                        SELECT COUNT(DISTINCT c.user_id)
@@ -269,18 +266,15 @@ public class Assignment2Tasks {
                             WHERE EXTRACT(DAY from start_date_time) != EXTRACT(DAY from end_date_time)) as c
                                                     
                         """;
-        ResultSet t = connection.createStatement().executeQuery(query);
-        while (t.next()) {
-            String a = t.getString(1);
-            System.out.println(a + "\n");
-        }
-
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 4");
+        simpleTable.display();
 
     }
 
     public static void task6(Connection connection) throws SQLException {
         final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        System.out.println("Task6");
 
         String query = """
                                              
@@ -296,7 +290,6 @@ public class Assignment2Tasks {
 
     public static void task7(Connection connection) throws SQLException {
 
-        System.out.println("Task7");
 
         String query = """
                        SELECT id
@@ -308,12 +301,10 @@ public class Assignment2Tasks {
                                                FROM activity
                                                WHERE transportation_mode = "taxi") as c);
                        """;
-        ResultSet t = connection.createStatement().executeQuery(query);
-        while (t.next()) {
-            String a = t.getString(1);
-            System.out.println(a + "\n");
-        }
-
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 7");
+        simpleTable.display();
 
     }
 

@@ -17,6 +17,9 @@ public class main {
             //            Assignment2Tasks.crateTables(connection);
             //            Assignment2Tasks.insertData(connection);
             Assignment2Tasks.task1(connection);
+            Assignment2Tasks.task2(connection);
+            Assignment2Tasks.task4(connection);
+            Assignment2Tasks.task7(connection);
 
         } catch (Exception e) {
             e.printStackTrace();
