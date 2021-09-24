@@ -240,8 +240,6 @@ public class Assignment2Tasks {
     }
 
     public static void task2(Connection connection) throws SQLException {
-
-
         String query = """
                        SELECT AVG(a.count) AS avg
                        FROM ( SELECT count(*) AS count, user_id
@@ -254,6 +252,20 @@ public class Assignment2Tasks {
         simpleTable.display();
 
 
+    }
+
+    public static void task3(Connection connection) throws SQLException {
+        String query = """
+                       SELECT user_id, COUNT(user_id) as num_activities
+                       from activity
+                       group by user_id
+                       order by num_activities DESC 
+                       limit 10
+                       """;
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 3");
+        simpleTable.display();
     }
 
     public static void task4(Connection connection) throws SQLException {
@@ -272,6 +284,17 @@ public class Assignment2Tasks {
         simpleTable.display();
 
     }
+
+    public static void task5(Connection connection) throws SQLException {
+        String query = """
+                       SELECT
+                       """;
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 4");
+        simpleTable.display();
+    }
+
 
     public static void task6(Connection connection) throws SQLException {
         final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -321,5 +344,45 @@ public class Assignment2Tasks {
                        """;
         ResultSet t = connection.createStatement().executeQuery(query);
 
+    }
+
+    public static void task9(Connection connection) throws SQLException {
+        String query = """
+                       SELECT
+                       """;
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 3");
+        simpleTable.display();
+    }
+
+    public static void task10(Connection connection) throws SQLException {
+        String query = """
+                       SELECT
+                       """;
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 3");
+        simpleTable.display();
+    }
+
+    public static void task11(Connection connection) throws SQLException {
+        String query = """
+                       SELECT
+                       """;
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 3");
+        simpleTable.display();
+    }
+
+    public static void task12(Connection connection) throws SQLException {
+        String query = """
+                       SELECT
+                       """;
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 3");
+        simpleTable.display();
     }
 }
