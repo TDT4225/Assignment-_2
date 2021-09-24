@@ -1,15 +1,54 @@
 package no.ntnu.stodist;
 
-import no.ntnu.stodist.database.MySqlConnection;
+import lombok.Data;
+import no.ntnu.stodist.models.Activity;
+import no.ntnu.stodist.models.TrackPoint;
 import no.ntnu.stodist.models.User;
+import no.ntnu.stodist.simpleTable.SimpleTable;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
+
+
 public class Assignment2Tasks {
+
+
+    public static double haversine_distance(double lat1, double lat2, double lon1, double lon2)
+    {
+
+        lon1 = Math.toRadians(lon1);
+        lon2 = Math.toRadians(lon2);
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+
+        double dlon = lon2 - lon1;
+        double dlat = lat2 - lat1;
+        double a = Math.pow(Math.sin(dlat / 2), 2)
+                 + Math.cos(lat1) * Math.cos(lat2)
+                 * Math.pow(Math.sin(dlon / 2), 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+
+        double r = 6371;
+        return c * r;
+    }
+    private static LocalDateTime[]  getTimeOverlap(LocalDateTime t1_start, LocalDateTime t1_end, LocalDateTime t2_start, LocalDateTime t2_end)
+    {
+        LocalDateTime start_overlap = t1_start.compareTo(t2_start) <= 0 ? t2_start : t1_start;
+        LocalDateTime end_overlap = t1_end.compareTo(t2_end) <= 0 ? t1_end : t2_end;
+        return new LocalDateTime[]{start_overlap, end_overlap};
+    }
+    private static boolean isTimeOverlap(LocalDateTime t1_start, LocalDateTime t1_end, LocalDateTime t2_start, LocalDateTime t2_end)
+    {
+        return t1_start.isBefore(t2_end) && t2_start.isBefore(t1_end);
+    }
 
     public static void crateTables(Connection connection) throws SQLException {
         String createUser = """
@@ -147,15 +186,121 @@ public class Assignment2Tasks {
     public static void task1(Connection connection) throws SQLException {
 
         String query = """
-                       SELECT *
-                       FROM stodist; 
+                       SELECT
+                          (SELECT COUNT(*) FROM user) as users,
+                          (SELECT COUNT(*) FROM activity) as activities,
+                          (SELECT COUNT(*) FROM track_point) as tps
                        """;
 
-        connection.createStatement().execute(query);
+        ResultSet count = connection.createStatement().executeQuery(query);
+        count.next();
+        SimpleTable<String> st = new SimpleTable<String>();
+        st.display();
+
+        String u = count.getString("users");
+        System.out.println("Users: " + u + "\n");
+        String a = count.getString("activities");
+        System.out.println("Activities: " + a + "\n");
+        String tp = count.getString("tps");
+        System.out.println("TrackPoints: " + tp + "\n");
+
 
     }
 
     public static void task2(Connection connection) throws SQLException {
+
+        System.out.println("Task2");
+
+        String query = """
+                       SELECT AVG(a.count) AS avg
+                       FROM ( SELECT count(*) AS count, user_id
+                              FROM activity
+                              GROUP BY user_id) AS a
+                        """;
+        ResultSet t = connection.createStatement().executeQuery(query);
+        while(t.next())
+        {
+            String time = t.getString(1);
+            System.out.println(time + "\n");
+        }
+
+
+    }
+
+    public static void task4(Connection connection) throws SQLException {
+
+        System.out.println("Task4");
+
+        String query = """
+                       SELECT COUNT(DISTINCT c.user_id)
+                       FROM(SELECT user_id
+                            FROM activity
+                            WHERE EXTRACT(DAY from start_date_time) != EXTRACT(DAY from end_date_time)) as c
+                                                    
+                        """;
+        ResultSet t = connection.createStatement().executeQuery(query);
+        while(t.next())
+        {
+            String a = t.getString(1);
+            System.out.println(a + "\n");
+        }
+
+
+    }
+
+    public static void task6(Connection connection) throws SQLException {
+        final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        System.out.println("Task6");
+
+        String query = """
+                      
+                       """;
+        ResultSet t = connection.createStatement().executeQuery(query);
+
+        while(t.next())
+        {
+            break;
+        }
+
+
+    }
+
+    public static void task7(Connection connection) throws SQLException {
+
+        System.out.println("Task7");
+
+        String query = """
+                       SELECT id
+                       FROM user
+                       WHERE id NOT IN (
+                                       SELECT DISTINCT c.user_id
+                                       FROM(
+                                               SELECT user_id, transportation_mode
+                                               FROM activity
+                                               WHERE transportation_mode = "taxi") as c);
+                       """;
+        ResultSet t = connection.createStatement().executeQuery(query);
+        while(t.next())
+        {
+            String a = t.getString(1);
+            System.out.println(a + "\n");
+        }
+
+
+    }
+
+
+    public static void task8(Connection connection) throws SQLException {
+
+        System.out.println("Task8");
+
+        String query = """
+                       SELECT transportation_mode, COUNT(DISTINCT user_id)
+                       FROM activity
+                       WHERE transportation_mode IS NOT NULL
+                       GROUP BY transportation_mode;        
+                       """;
+        ResultSet t = connection.createStatement().executeQuery(query);
 
     }
 }
