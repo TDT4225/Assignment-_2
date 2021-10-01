@@ -53,6 +53,16 @@ public class Assignment2Tasks {
         return c * r;
     }
 
+
+    /**
+     * Get the overlap between two LocalDateTime ranges
+     *
+     * @param t1_start start of first datetime
+     * @param t1_end end of first datetime
+     * @param t2_start start of second datetim
+     * @param t2_end end of second datetime
+     * @return Array with start and end LocalDateTime
+     */
     private static LocalDateTime[] getTimeOverlap(LocalDateTime t1_start,
                                                   LocalDateTime t1_end,
                                                   LocalDateTime t2_start,
@@ -63,6 +73,15 @@ public class Assignment2Tasks {
         return new LocalDateTime[]{start_overlap, end_overlap};
     }
 
+    /**
+     * Return whether two LocalDatetime ranges overlap
+     *
+     * @param t1_start start of first datetime
+     * @param t1_end end of first datetime
+     * @param t2_start start of second datetim
+     * @param t2_end end of second datetime
+     * @return boolean, true if overlap, false if not
+     */
     private static boolean isTimeOverlap(LocalDateTime t1_start,
                                          LocalDateTime t1_end,
                                          LocalDateTime t2_start,
