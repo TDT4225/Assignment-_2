@@ -287,7 +287,17 @@ public class Assignment2Tasks {
 
     public static void task5(Connection connection) throws SQLException {
         String query = """
-                       SELECT
+                       select a.id as duplicate_asignment_ids
+                       from activity as a,
+                           (
+                               select user_id, start_date_time, end_date_time
+                               from activity
+                               group by user_id, start_date_time, end_date_time
+                               having count(*) > 1
+                           ) as f
+                       where a.user_id = f.user_id
+                       AND  a.start_date_time = f.start_date_time
+                       AND a.end_date_time = f.end_date_time;
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -295,7 +305,7 @@ public class Assignment2Tasks {
         simpleTable.display();
     }
 
-
+    //øystein
     public static void task6(Connection connection) throws SQLException {
         final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -366,6 +376,7 @@ public class Assignment2Tasks {
         simpleTable.display();
     }
 
+    //øystein
     public static void task11(Connection connection) throws SQLException {
         String query = """
                        SELECT
