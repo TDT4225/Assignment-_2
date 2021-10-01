@@ -9,19 +9,32 @@ import no.ntnu.stodist.simpleTable.SimpleTable;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.chrono.ChronoPeriod;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 public class Assignment2Tasks {
 
-
+    /**
+     * Calculates the haversine distance between two coordinates in km
+     *
+     * @param lat1 lat of the first cord
+     * @param lat2 lat of the second cord
+     * @param lon1 lon of the first cord
+     * @param lon2 lon of the second cord
+     *
+     * @return Returns the distance in Km between the points
+     */
     public static double haversine_distance(double lat1, double lat2, double lon1, double lon2) {
 
         lon1 = Math.toRadians(lon1);
@@ -190,7 +203,7 @@ public class Assignment2Tasks {
         });
     }
 
-    private static SimpleTable makeResultSetTable(ResultSet resultSet) throws SQLException {
+    private static SimpleTable<List<String>> makeResultSetTable(ResultSet resultSet) throws SQLException {
         SimpleTable<List<String>> simpleTable = new SimpleTable<>();
 
         ResultSetMetaData metaData = resultSet.getMetaData();
@@ -232,8 +245,8 @@ public class Assignment2Tasks {
                           (SELECT COUNT(*) FROM track_point) as tps
                        """;
 
-        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
-        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 1");
         simpleTable.display();
 
@@ -332,7 +345,7 @@ public class Assignment2Tasks {
                                        FROM(
                                                SELECT user_id, transportation_mode
                                                FROM activity
-                                               WHERE transportation_mode = "taxi") as c);
+                                               WHERE transportation_mode = 'taxi') as c);
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -356,24 +369,137 @@ public class Assignment2Tasks {
 
     }
 
-    public static void task9(Connection connection) throws SQLException {
+    private static void task9a(Connection connection) throws SQLException {
         String query = """
-                       SELECT
+                       select count(*) as num_activites, year(activity.start_date_time) as year, month(activity.start_date_time) as month
+                       from activity
+                       group by year(activity.start_date_time), month(activity.start_date_time)
+                       order by count(*) desc
+                       limit 1;
                        """;
-        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
-        SimpleTable simpleTable = makeResultSetTable(resultSet);
-        simpleTable.setTitle("Task 3");
+        ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 9a");
         simpleTable.display();
+    }
+
+    private static void task9b(Connection connection) throws SQLException {
+        String query = """
+                       select count(a.user_id) as num_activities, a.user_id, sum(timediff(a.end_date_time,a.start_date_time)) as time_spent
+                       from
+                            activity as a,
+                            (select count(*) as num_activites, year(activity.start_date_time) as year, month(activity.start_date_time) as month
+                             from activity
+                             group by year(activity.start_date_time), month(activity.start_date_time)
+                             order by count(*) desc
+                             limit 1) as best_t
+                       where year(a.start_date_time) = best_t.year
+                       AND month(a.start_date_time) = best_t.month
+                       group by user_id
+                       order by count(a.user_id) desc
+                       limit 2;
+                       """;
+        ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 9b");
+        simpleTable.display();
+
+        List<List<String>> tabelData = simpleTable.getItems();
+
+        var timeSpentTop    = Duration.ofSeconds(Long.parseLong(tabelData.get(0).get(2)));
+        var timeSpentSecond = Duration.ofSeconds(Long.parseLong(tabelData.get(1).get(2)));
+
+        int dif = timeSpentTop.compareTo(timeSpentSecond);
+        if (dif > 0) {
+            System.out.printf(
+                    "the user with the most activities, user: %s spent more time activitying than the user with the second most activities\n",
+                    tabelData.get(0).get(0)
+            );
+        } else if (dif < 0) {
+            System.out.printf(
+                    "the user with the next most activities, user: %s spent more time activitying than the user with the second most activities\n",
+                    tabelData.get(1).get(0)
+            );
+        } else {
+            System.out.println("the top and next top users spent the same time activitying");
+        }
+
+        System.out.printf("user: %-4s with most activities spent     : Hours: %-3s Min: %-2s Sec: %s\n",
+                          tabelData.get(0).get(0),
+                          timeSpentTop.toHours(),
+                          timeSpentTop.minusHours(timeSpentTop.toHours()).toMinutes(),
+                          timeSpentTop.minusMinutes(timeSpentTop.toMinutes())
+                                      .toSeconds()
+        );
+        System.out.printf("user: %-4s with next most activities spent: Hours: %-3s Min: %-2s Sec: %s\n",
+                          tabelData.get(1).get(0),
+                          timeSpentSecond.toHours(),
+                          timeSpentSecond.minusHours(timeSpentSecond.toHours()).toMinutes(),
+                          timeSpentSecond.minusMinutes(timeSpentSecond.toMinutes())
+                                         .toSeconds()
+        );
+
+
+    }
+
+    public static void task9(Connection connection) throws SQLException {
+        task9a(connection);
+        task9b(connection);
     }
 
     public static void task10(Connection connection) throws SQLException {
         String query = """
-                       SELECT
+                       select tp.*
+                       from (select * from user where user.id = 112) as u
+                       inner join (
+                           select *
+                           from activity
+                           where year(start_date_time) = 2008
+                           AND transportation_mode = 'walk'
+                           ) a
+                       on u.id = a.user_id
+                       inner join track_point tp
+                       on a.id = tp.activity_id
                        """;
-        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
-        SimpleTable simpleTable = makeResultSetTable(resultSet);
-        simpleTable.setTitle("Task 3");
-        simpleTable.display();
+        ResultSet resultSet = connection.createStatement().executeQuery(query);
+
+        HashMap<Integer, Activity> activities = new HashMap<>();
+
+        while (resultSet.next()) {
+            TrackPoint trackPoint = new TrackPoint();
+            trackPoint.setLatitude(resultSet.getDouble(3));
+            trackPoint.setLongitude(resultSet.getDouble(4));
+
+            int activityId = resultSet.getInt(2);
+            if (! activities.containsKey(activityId)) {
+                activities.put(activityId, new Activity(activityId));
+            }
+            Activity parentAct = activities.get(activityId);
+            parentAct.getTrackPoints().add(trackPoint);
+        }
+
+        double totDist = activities.values().stream().parallel().map(activity -> {
+            TrackPoint keep = null;
+            double     roll = 0;
+            for (TrackPoint trackPoint : activity.getTrackPoints()) {
+                if (keep == null) {
+                    keep = trackPoint;
+                    continue;
+                }
+                roll += haversine_distance(trackPoint.getLatitude(),
+                                           keep.getLatitude(),
+                                           trackPoint.getLongitude(),
+                                           keep.getLongitude()
+                );
+                keep = trackPoint;
+
+            }
+            return roll;
+        }).reduce(Double::sum).get();
+
+        System.out.println("\tTask 10");
+        System.out.printf("User 112 have in total walked %.3f km in 2008\n", totDist);
+
     }
 
     //øystein
@@ -389,11 +515,23 @@ public class Assignment2Tasks {
 
     public static void task12(Connection connection) throws SQLException {
         String query = """
-                       SELECT
+                       SELECT distinct user_id, count(user_id) num_invalid_activities
+                       from user
+                       inner join activity a on user.id = a.user_id
+                       where a.id in (
+                           SELECT tp.activity_id
+                           from track_point tp
+                                    inner join (select * from track_point) tp2
+                                               on tp.id = tp2.id + 1
+                                                   and tp.activity_id = tp2.activity_id
+                                                   and minute(timediff(tp.date_time, tp2.date_time)) >= 5
+                           group by tp.activity_id
+                       )
+                       group by user_id;
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
-        simpleTable.setTitle("Task 3");
+        simpleTable.setTitle("Task 12");
         simpleTable.display();
     }
 }
