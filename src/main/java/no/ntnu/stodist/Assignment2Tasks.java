@@ -273,11 +273,11 @@ public class Assignment2Tasks {
 
     public static void task2(Connection connection) throws SQLException {
         String query = """
-                       SELECT AVG(a.count) AS avg
+                       SELECT AVG(a.count) AS avg, MIN(a.count) as min, MAX(a.count) as max
                        FROM ( SELECT count(*) AS count, user_id
-                              FROM activity
-                              GROUP BY user_id) AS a
-                        """;
+                               FROM activity
+                               GROUP BY user_id) AS a
+                       """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 2");
@@ -307,9 +307,9 @@ public class Assignment2Tasks {
                        SELECT COUNT(DISTINCT c.user_id)
                        FROM(SELECT user_id
                             FROM activity
-                            WHERE EXTRACT(DAY from start_date_time) != EXTRACT(DAY from end_date_time)) as c
+                            WHERE DATEDIFF(end_date_time, start_date_time) = 1) as c
                                                     
-                        """;
+                       """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 4");
