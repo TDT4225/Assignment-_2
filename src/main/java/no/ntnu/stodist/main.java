@@ -26,8 +26,8 @@ public class main {
             //            Assignment2Tasks.task8(connection);
             // Assignment2Tasks.task9(connection);
             //Assignment2Tasks.task10(connection);
-            //            Assignment2Tasks.task11(connection);
-            Assignment2Tasks.task12(connection);
+            Assignment2Tasks.task11(connection);
+            //Assignment2Tasks.task12(connection);
 
 
         } catch (Exception e) {

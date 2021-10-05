@@ -502,14 +502,27 @@ public class Assignment2Tasks {
 
     }
 
-    //øystein
     public static void task11(Connection connection) throws SQLException {
         String query = """
-                       SELECT
+                       select user_id, sum(act_altitude_gain.gained_altitude) as user_gained_altitude
+                             from activity as act
+                             join (
+                                 SELECT tp.activity_id, sum(tp2.altitude - tp.altitude) as gained_altitude
+                                 from track_point tp
+                                 inner join track_point tp2
+                                 on tp.id = tp2.id + 1
+                                 and tp.activity_id = tp2.activity_id
+                                 and tp2.altitude > tp.altitude  # we are looking for gained altitude only
+                                 group by tp.activity_id
+                                 ) as act_altitude_gain
+                             on act.id = act_altitude_gain.activity_id
+                             group by act.user_id
+                             order by user_gained_altitude desc
+                             limit 20
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
-        simpleTable.setTitle("Task 3");
+        simpleTable.setTitle("Task 11");
         simpleTable.display();
     }
 
