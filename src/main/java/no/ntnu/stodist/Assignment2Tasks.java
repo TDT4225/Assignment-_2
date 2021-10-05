@@ -53,6 +53,16 @@ public class Assignment2Tasks {
         return c * r;
     }
 
+
+    /**
+     * Get the overlap between two LocalDateTime ranges
+     *
+     * @param t1_start start of first datetime
+     * @param t1_end end of first datetime
+     * @param t2_start start of second datetim
+     * @param t2_end end of second datetime
+     * @return Array with start and end LocalDateTime
+     */
     private static LocalDateTime[] getTimeOverlap(LocalDateTime t1_start,
                                                   LocalDateTime t1_end,
                                                   LocalDateTime t2_start,
@@ -63,6 +73,15 @@ public class Assignment2Tasks {
         return new LocalDateTime[]{start_overlap, end_overlap};
     }
 
+    /**
+     * Return whether two LocalDatetime ranges overlap
+     *
+     * @param t1_start start of first datetime
+     * @param t1_end end of first datetime
+     * @param t2_start start of second datetim
+     * @param t2_end end of second datetime
+     * @return boolean, true if overlap, false if not
+     */
     private static boolean isTimeOverlap(LocalDateTime t1_start,
                                          LocalDateTime t1_end,
                                          LocalDateTime t2_start,
@@ -254,11 +273,11 @@ public class Assignment2Tasks {
 
     public static void task2(Connection connection) throws SQLException {
         String query = """
-                       SELECT AVG(a.count) AS avg
+                       SELECT AVG(a.count) AS avg, MIN(a.count) as min, MAX(a.count) as max
                        FROM ( SELECT count(*) AS count, user_id
-                              FROM activity
-                              GROUP BY user_id) AS a
-                        """;
+                               FROM activity
+                               GROUP BY user_id) AS a
+                       """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 2");
@@ -288,9 +307,9 @@ public class Assignment2Tasks {
                        SELECT COUNT(DISTINCT c.user_id)
                        FROM(SELECT user_id
                             FROM activity
-                            WHERE EXTRACT(DAY from start_date_time) != EXTRACT(DAY from end_date_time)) as c
+                            WHERE DATEDIFF(end_date_time, start_date_time) = 1) as c
                                                     
-                        """;
+                       """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 4");
