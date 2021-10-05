@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DatasetParser {
@@ -23,10 +24,14 @@ public class DatasetParser {
 
     public List<User> parseDataset(File rootDir) throws IOException {
 
-        List<User> retList = Files.list(rootDir.toPath())
-                                  .map(Path::toFile)
-                                  .map(this::parseUserDir)
-                                  .toList();
+        ArrayList<User> retList   = new ArrayList<>();
+        var             usersDirs = Files.list(rootDir.toPath()).sorted().toList();
+
+        for (Path path : usersDirs) {
+            retList.add(this.parseUserDir(path.toFile()));
+        }
+
+
         return retList;
 
 
@@ -40,7 +45,7 @@ public class DatasetParser {
             File labelsFile = new File(userDir, labelFileName);
 
             List<File> fileList = Files.list(new File(userDir, dataDirName).toPath()).map(Path::toFile).toList();
-            
+
             List<Activity> activities = fileList.stream().parallel().filter(file -> {
                 try {
                     return Files.lines(file.toPath()).count() < 2506;

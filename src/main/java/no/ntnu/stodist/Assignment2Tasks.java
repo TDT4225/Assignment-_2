@@ -103,7 +103,7 @@ public class Assignment2Tasks {
         String createAct = """
                            CREATE TABLE if not exists activity (
                                 id int primary key auto_increment,
-                                user_id int references user(id),
+                                user_id int references user(id) on delete cascade on update cascade,
                                 transportation_mode text,
                                 start_date_time datetime,
                                 end_date_time datetime
@@ -114,7 +114,7 @@ public class Assignment2Tasks {
         String createTrack = """
                              CREATE TABLE if not exists track_point(
                                  id int primary key auto_increment,
-                                 activity_id int references activity(id),
+                                 activity_id int references activity(id) on delete cascade on update cascade,
                                  lat double,
                                  lon double,
                                  altitude int,
@@ -132,7 +132,7 @@ public class Assignment2Tasks {
 
     public static void insertData(Connection connection) throws SQLException, IOException {
 
-        String userQueryBase  = "INSERT INTO user (id, has_labels)  VALUES";
+        String userQueryBase  = "INSERT INTO user (id, has_labels)  VALUES ";
         String actQueryBase   = "INSERT INTO activity (id, user_id, transportation_mode, start_date_time, end_date_time)  VALUES ";
         String trackQueryBase = "INSERT INTO track_point (id, activity_id, lat, lon, altitude, data_days, date_time)  VALUES ";
 
