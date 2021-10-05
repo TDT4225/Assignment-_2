@@ -1,6 +1,5 @@
 package no.ntnu.stodist;
 
-import lombok.Data;
 import no.ntnu.stodist.models.Activity;
 import no.ntnu.stodist.models.TrackPoint;
 import no.ntnu.stodist.models.User;
@@ -11,16 +10,11 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.chrono.ChronoPeriod;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 
 public class Assignment2Tasks {
@@ -306,7 +300,7 @@ public class Assignment2Tasks {
 
 
         String query = """
-                       SELECT COUNT(DISTINCT c.user_id)
+                       SELECT COUNT(DISTINCT c.user_id) as num_users
                        FROM(SELECT user_id
                             FROM activity
                             WHERE DATEDIFF(end_date_time, start_date_time) = 1) as c
@@ -335,7 +329,7 @@ public class Assignment2Tasks {
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
-        simpleTable.setTitle("Task 4");
+        simpleTable.setTitle("Task 5");
         simpleTable.display();
     }
 
@@ -396,8 +390,10 @@ public class Assignment2Tasks {
                        WHERE transportation_mode IS NOT NULL
                        GROUP BY transportation_mode;        
                        """;
-        ResultSet t = connection.createStatement().executeQuery(query);
-
+        ResultSet resultSet = connection.createStatement().executeQuery(query);
+        SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 8");
+        simpleTable.display();
     }
 
     private static void task9a(Connection connection) throws SQLException {
