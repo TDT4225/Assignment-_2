@@ -269,10 +269,18 @@ public class Assignment2Tasks {
 
     public static void task2(Connection connection) throws SQLException {
         String query = """
-                       SELECT AVG(a.count) AS avg, MIN(a.count) as min, MAX(a.count) as max
-                       FROM ( SELECT count(*) AS count, user_id
-                               FROM activity
-                               GROUP BY user_id) AS a
+                         SELECT AVG(t.activity_count) AS avg, MIN(t.activity_count) as min, MAX(t.activity_count) as max
+                         FROM (
+                             SELECT u.id, COALESCE(a.user_count, 0) AS activity_count
+                             FROM user u
+                               LEFT JOIN
+                               (
+                                   SELECT user_id, COUNT(*) AS user_count
+                                   FROM activity
+                                   GROUP BY user_id
+                               ) a
+                               ON u.id = a.user_id
+                          ) as t;                  
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
