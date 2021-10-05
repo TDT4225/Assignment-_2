@@ -58,9 +58,10 @@ public class Assignment2Tasks {
      * Get the overlap between two LocalDateTime ranges
      *
      * @param t1_start start of first datetime
-     * @param t1_end end of first datetime
+     * @param t1_end   end of first datetime
      * @param t2_start start of second datetim
-     * @param t2_end end of second datetime
+     * @param t2_end   end of second datetime
+     *
      * @return Array with start and end LocalDateTime
      */
     private static LocalDateTime[] getTimeOverlap(LocalDateTime t1_start,
@@ -77,9 +78,10 @@ public class Assignment2Tasks {
      * Return whether two LocalDatetime ranges overlap
      *
      * @param t1_start start of first datetime
-     * @param t1_end end of first datetime
+     * @param t1_end   end of first datetime
      * @param t2_start start of second datetim
-     * @param t2_end end of second datetime
+     * @param t2_end   end of second datetime
+     *
      * @return boolean, true if overlap, false if not
      */
     private static boolean isTimeOverlap(LocalDateTime t1_start,
@@ -342,7 +344,19 @@ public class Assignment2Tasks {
         final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         String query = """
-                                             
+                       with tps as (
+                           select user_id, activity_id,tp.id as act_id, lat, lon, date_time
+                           from activity a
+                                    join track_point tp
+                                         on a.id = tp.activity_id)
+                       select tps.user_id as user_1, tps2.user_id as user_2, tps.date_time as encounter_time,
+                              st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) as encounter_dist
+                       from tps
+                       join tps as tps2
+                       on tps.act_id = tps2.act_id + 1
+                       and tps.user_id != tps2.user_id
+                       and second(TIMEDIFF(tps.date_time, tps2.date_time)) < 60
+                       and st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) < 100;                      
                        """;
         ResultSet t = connection.createStatement().executeQuery(query);
 
