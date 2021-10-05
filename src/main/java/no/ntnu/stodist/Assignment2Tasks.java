@@ -353,7 +353,7 @@ public class Assignment2Tasks {
                        from tps
                        inner join (select * from tps limit 1000000) as tps2
                        on tps.user_id != tps2.user_id
-                       and second(TIMEDIFF(tps.date_time, tps2.date_time)) < 60
+                       and second(TIME_FORMAT(ABS(TIMEDIFF(tps.date_time, tps2.date_time)))) < 60
                        and st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) < 100;                    
                        """;
         ResultSet t = connection.createStatement().executeQuery(query);
