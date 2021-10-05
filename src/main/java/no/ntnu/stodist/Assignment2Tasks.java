@@ -349,14 +349,12 @@ public class Assignment2Tasks {
                            from activity a
                                     join track_point tp
                                          on a.id = tp.activity_id)
-                       select tps.user_id as user_1, tps2.user_id as user_2, tps.date_time as encounter_time,
-                              st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) as encounter_dist
+                       select distinct tps.user_id as user_1, tps2.user_id as user_2
                        from tps
-                       join tps as tps2
-                       on tps.act_id = tps2.act_id + 1
-                       and tps.user_id != tps2.user_id
+                       inner join (select * from tps limit 1000000) as tps2
+                       on tps.user_id != tps2.user_id
                        and second(TIMEDIFF(tps.date_time, tps2.date_time)) < 60
-                       and st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) < 100;                      
+                       and st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) < 100;                    
                        """;
         ResultSet t = connection.createStatement().executeQuery(query);
 
