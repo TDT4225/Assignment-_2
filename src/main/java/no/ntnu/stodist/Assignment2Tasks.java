@@ -351,7 +351,7 @@ public class Assignment2Tasks {
                                          on a.id = tp.activity_id)
                        select distinct tps.user_id as user_1, tps2.user_id as user_2
                        from tps
-                       inner join (select * from tps limit 1000000) as tps2
+                       inner join tps as tps2
                        on tps.user_id != tps2.user_id
                        and second(TIME_FORMAT(ABS(TIMEDIFF(tps.date_time, tps2.date_time)))) < 60
                        and st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) < 100;                    
