@@ -94,32 +94,32 @@ public class Assignment2Tasks {
 
     public static void crateTables(Connection connection) throws SQLException {
         String createUser = """
-                            CREATE TABLE if not exists user (
-                                id int primary key auto_increment,
-                                has_labels boolean
+                            CREATE TABLE IF NOT EXISTS user (
+                                id INT PRIMARY KEY AUTO_INCREMENT,
+                                has_labels BOOLEAN
                             ); 
                             """;
 
         String createAct = """
-                           CREATE TABLE if not exists activity (
-                                id int primary key auto_increment,
-                                user_id int references user(id) on delete cascade on update cascade,
-                                transportation_mode text,
-                                start_date_time datetime,
-                                end_date_time datetime
+                           CREATE TABLE IF NOT EXISTS activity (
+                                id INT PRIMARY KEY AUTO_INCREMENT,
+                                user_id INT REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                                transportation_mode TEXT,
+                                start_date_time DATETIME,
+                                end_date_time DATETIME
                             ); 
                                                       """;
 
 
         String createTrack = """
-                             CREATE TABLE if not exists track_point(
-                                 id int primary key auto_increment,
-                                 activity_id int references activity(id) on delete cascade on update cascade,
-                                 lat double,
-                                 lon double,
-                                 altitude int,
-                                 data_days double,
-                                 date_time datetime
+                             CREATE TABLE IF NOT EXISTS track_point(
+                                 id INT PRIMARY KEY AUTO_INCREMENT,
+                                 activity_id INT REFERENCES activity(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                                 lat DOUBLE,
+                                 lon DOUBLE,
+                                 altitude INT,
+                                 data_days DOUBLE,
+                                 date_time DATETIME
                              );
                              """;
         connection.createStatement().execute(createUser);
@@ -261,9 +261,9 @@ public class Assignment2Tasks {
 
         String query = """
                        SELECT
-                          (SELECT COUNT(*) FROM user) as users,
-                          (SELECT COUNT(*) FROM activity) as activities,
-                          (SELECT COUNT(*) FROM track_point) as tps
+                          (SELECT COUNT(*) FROM user) AS users,
+                          (SELECT COUNT(*) FROM activity) AS activities,
+                          (SELECT COUNT(*) FROM track_point) AS tps
                        """;
 
         ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
@@ -275,8 +275,8 @@ public class Assignment2Tasks {
 
     public static void task2(Connection connection) throws SQLException {
         String query = """
-                       SELECT AVG(a.count) AS avg, MIN(a.count) as min, MAX(a.count) as max
-                       FROM ( SELECT count(*) AS count, user_id
+                       SELECT AVG(a.count) AS avg, MIN(a.count) AS min, MAX(a.count) AS max
+                       FROM ( SELECT COUNT(*) AS count, user_id
                                FROM activity
                                GROUP BY user_id) AS a
                        """;
@@ -290,11 +290,11 @@ public class Assignment2Tasks {
 
     public static void task3(Connection connection) throws SQLException {
         String query = """
-                       SELECT user_id, COUNT(user_id) as num_activities
-                       from activity
-                       group by user_id
-                       order by num_activities DESC 
-                       limit 10
+                       SELECT user_id, COUNT(user_id) AS num_activities
+                       FROM activity
+                       GROUP BY user_id
+                       ORDER BY num_activities DESC 
+                       LIMIT 10
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -309,7 +309,7 @@ public class Assignment2Tasks {
                        SELECT COUNT(DISTINCT c.user_id)
                        FROM(SELECT user_id
                             FROM activity
-                            WHERE DATEDIFF(end_date_time, start_date_time) = 1) as c
+                            WHERE DATEDIFF(end_date_time, start_date_time) = 1) AS c
                                                     
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
@@ -321,22 +321,29 @@ public class Assignment2Tasks {
 
     public static void task5(Connection connection) throws SQLException {
         String query = """
-                       select a.id as duplicate_asignment_ids
-                       from activity as a,
+                       SELECT a.id AS duplicate_asignment_ids
+                       FROM activity AS a,
                            (
-                               select user_id, start_date_time, end_date_time
-                               from activity
-                               group by user_id, start_date_time, end_date_time
-                               having count(*) > 1
-                           ) as f
-                       where a.user_id = f.user_id
+                               SELECT user_id, start_date_time, end_date_time
+                               FROM activity
+                               GROUP BY user_id, start_date_time, end_date_time
+                               HAVING COUNT(*) > 1
+                           ) AS f
+                       WHERE a.user_id = f.user_id
                        AND  a.start_date_time = f.start_date_time
                        AND a.end_date_time = f.end_date_time;
                        """;
-        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
-        SimpleTable simpleTable = makeResultSetTable(resultSet);
-        simpleTable.setTitle("Task 4");
-        simpleTable.display();
+        ResultSet resultSet = connection.createStatement().executeQuery(query);
+        resultSet.next();
+
+        if (! resultSet.next()) {
+
+            System.out.println("no results");
+        } else {
+            SimpleTable simpleTable = makeResultSetTable(resultSet);
+            simpleTable.setTitle("Task 5");
+            simpleTable.display();
+        }
     }
 
     //øystein
@@ -344,23 +351,24 @@ public class Assignment2Tasks {
         final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         String query = """
-                       with tps as (
-                           select user_id, activity_id,tp.id as act_id, lat, lon, date_time
-                           from activity a
-                                    join track_point tp
-                                         on a.id = tp.activity_id)
-                       select distinct tps.user_id as user_1, tps2.user_id as user_2
-                       from tps
-                       inner join tps as tps2
-                       on tps.user_id != tps2.user_id
-                       and second(TIME_FORMAT(ABS(TIMEDIFF(tps.date_time, tps2.date_time)))) < 60
-                       and st_distance(point(tps.lat, tps.lon), point(tps2.lat, tps2.lon)) < 100;                    
+                       WITH tps AS (
+                           SELECT user_id, activity_id,tp.id AS act_id, lat, lon, date_time
+                           FROM activity a
+                                    JOIN track_point tp
+                                         ON a.id = tp.activity_id)
+                       SELECT DISTINCT tps.user_id AS user_1, tps2.user_id AS user_2
+                       FROM tps
+                       INNER JOIN tps AS tps2
+                       ON tps.user_id != tps2.user_id
+                       AND SECOND(TIME_FORMAT(ABS(TIMEDIFF(tps.date_time, tps2.date_time)))) < 60
+                       AND ST_DISTANCE(POINT(tps.lat, tps.lon), POINT(tps2.lat, tps2.lon)) < 100;                    
                        """;
         ResultSet t = connection.createStatement().executeQuery(query);
 
-        while (t.next()) {
-            break;
-        }
+        ResultSet   resultSet   = connection.createStatement().executeQuery(query);
+        SimpleTable simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 6");
+        simpleTable.display();
 
 
     }
@@ -376,7 +384,7 @@ public class Assignment2Tasks {
                                        FROM(
                                                SELECT user_id, transportation_mode
                                                FROM activity
-                                               WHERE transportation_mode = 'taxi') as c);
+                                               WHERE transportation_mode = 'taxi') AS c);
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -402,11 +410,11 @@ public class Assignment2Tasks {
 
     private static void task9a(Connection connection) throws SQLException {
         String query = """
-                       select count(*) as num_activites, year(activity.start_date_time) as year, month(activity.start_date_time) as month
-                       from activity
-                       group by year(activity.start_date_time), month(activity.start_date_time)
-                       order by count(*) desc
-                       limit 1;
+                       SELECT COUNT(*) AS num_activites, YEAR(activity.start_date_time) AS year, MONTH(activity.start_date_time) AS month
+                       FROM activity
+                       GROUP BY YEAR(activity.start_date_time), MONTH(activity.start_date_time)
+                       ORDER BY COUNT(*) DESC
+                       LIMIT 1;
                        """;
         ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
@@ -416,19 +424,19 @@ public class Assignment2Tasks {
 
     private static void task9b(Connection connection) throws SQLException {
         String query = """
-                       select count(a.user_id) as num_activities, a.user_id, sum(timediff(a.end_date_time,a.start_date_time)) as time_spent
-                       from
-                            activity as a,
-                            (select count(*) as num_activites, year(activity.start_date_time) as year, month(activity.start_date_time) as month
-                             from activity
-                             group by year(activity.start_date_time), month(activity.start_date_time)
-                             order by count(*) desc
-                             limit 1) as best_t
-                       where year(a.start_date_time) = best_t.year
-                       AND month(a.start_date_time) = best_t.month
-                       group by user_id
-                       order by count(a.user_id) desc
-                       limit 2;
+                       SELECT COUNT(a.user_id) AS num_activities, a.user_id, SUM(TIMEDIFF(a.end_date_time,a.start_date_time)) AS time_spent
+                       FROM
+                            activity AS a,
+                            (SELECT COUNT(*) AS num_activites, YEAR(activity.start_date_time) AS year, MONTH(activity.start_date_time) AS month
+                             FROM activity
+                             GROUP BY YEAR(activity.start_date_time), MONTH(activity.start_date_time)
+                             ORDER BY COUNT(*) DESC
+                             LIMIT 1) AS best_t
+                       WHERE YEAR(a.start_date_time) = best_t.year
+                       AND MONTH(a.start_date_time) = best_t.month
+                       GROUP BY user_id
+                       ORDER BY COUNT(a.user_id) DESC
+                       LIMIT 2;
                        """;
         ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
@@ -480,17 +488,17 @@ public class Assignment2Tasks {
 
     public static void task10(Connection connection) throws SQLException {
         String query = """
-                       select tp.*
-                       from (select * from user where user.id = 112) as u
-                       inner join (
-                           select *
-                           from activity
-                           where year(start_date_time) = 2008
+                       SELECT tp.*
+                       FROM (SELECT * FROM user WHERE user.id = 112) AS u
+                       INNER JOIN (
+                           SELECT *
+                           FROM activity
+                           WHERE YEAR(start_date_time) = 2008
                            AND transportation_mode = 'walk'
                            ) a
-                       on u.id = a.user_id
-                       inner join track_point tp
-                       on a.id = tp.activity_id
+                       ON u.id = a.user_id
+                       INNER JOIN track_point tp
+                       ON a.id = tp.activity_id
                        """;
         ResultSet resultSet = connection.createStatement().executeQuery(query);
 
@@ -535,21 +543,22 @@ public class Assignment2Tasks {
 
     public static void task11(Connection connection) throws SQLException {
         String query = """
-                       select user_id, sum(act_altitude_gain.gained_altitude) as user_gained_altitude
-                             from activity as act
-                             join (
-                                 SELECT tp.activity_id, sum(tp2.altitude - tp.altitude) as gained_altitude
-                                 from track_point tp
-                                 inner join track_point tp2
-                                 on tp.id = tp2.id + 1
-                                 and tp.activity_id = tp2.activity_id
-                                 and tp2.altitude > tp.altitude  # we are looking for gained altitude only
-                                 group by tp.activity_id
-                                 ) as act_altitude_gain
-                             on act.id = act_altitude_gain.activity_id
-                             group by act.user_id
-                             order by user_gained_altitude desc
-                             limit 20
+                       WITH delta_alt_act AS (
+                           WITH delta_alt_tps AS (
+                               SELECT track_point.id, track_point.activity_id , LEAD(track_point.altitude) OVER (PARTITION BY track_point.activity_id ORDER BY id) - track_point.altitude AS delta_alt
+                               FROM track_point
+                               WHERE track_point.altitude != -777
+                               AND track_point.altitude IS NOT NULL
+                           )
+                           SELECT delta_alt_tps.activity_id, SUM(IF(delta_alt_tps.delta_alt > 0, delta_alt_tps.delta_alt, 0)) AS altitude_gain
+                           FROM delta_alt_tps
+                           GROUP BY delta_alt_tps.activity_id)
+                       SELECT activity.user_id, (SUM(delta_alt_act.altitude_gain)/ 3.2808) AS user_altitude_gain_m
+                       FROM activity
+                       JOIN delta_alt_act ON activity.id = delta_alt_act.activity_id
+                       GROUP BY activity.user_id
+                       ORDER BY  user_altitude_gain_m DESC
+                       LIMIT 20;                
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -559,19 +568,20 @@ public class Assignment2Tasks {
 
     public static void task12(Connection connection) throws SQLException {
         String query = """
-                       SELECT distinct user_id, count(user_id) num_invalid_activities
-                       from user
-                       inner join activity a on user.id = a.user_id
-                       where a.id in (
+                       SELECT DISTINCT user_id, COUNT(user_id) num_invalid_activities
+                       FROM user
+                                INNER JOIN activity a ON user.id = a.user_id
+                       WHERE a.id IN (
                            SELECT tp.activity_id
-                           from track_point tp
-                                    inner join (select * from track_point) tp2
-                                               on tp.id = tp2.id + 1
-                                                   and tp.activity_id = tp2.activity_id
-                                                   and minute(timediff(tp.date_time, tp2.date_time)) >= 5
-                           group by tp.activity_id
+                           FROM track_point tp
+                                    INNER JOIN (
+                                        SELECT LAG(track_point.id, 1) OVER (ORDER BY track_point.id) AS lagid, track_point.* FROM track_point) tp2
+                                               ON tp.id = tp2.lagid
+                                                   AND tp.activity_id = tp2.activity_id
+                                                   AND MINUTE(TIMEDIFF(tp.date_time, tp2.date_time)) >= 5
+                           GROUP BY tp.activity_id
                        )
-                       group by user_id;
+                       GROUP BY user_id;
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
