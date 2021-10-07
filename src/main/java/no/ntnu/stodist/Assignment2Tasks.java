@@ -142,12 +142,6 @@ public class Assignment2Tasks {
 
         List<User> users = datasetParser.parseDataset(datasetDir);
 
-        //        users.stream()
-        //             .filter(user -> user.getId() == 113)
-        //             .forEach(user -> user.getActivities()
-        //                                  .forEach(activity -> System.out.println(activity.getTransportationMode())));
-        //        System.exit(0);
-
         StringBuilder userQueryStringBuilder = new StringBuilder(userQueryBase);
         StringBuilder actQueryStringBuilder  = new StringBuilder(actQueryBase);
 
@@ -187,6 +181,9 @@ public class Assignment2Tasks {
 
 
         users.forEach(user -> {
+            //            if (user.getId() < 10) {
+            //                return;
+            //            }
             // have to split it up if not the query string ends up a 1 010 534 900 chars long and something rolls over
             StringBuilder userPointQueryStringB = new StringBuilder(trackQueryBase);
             user.getActivities()

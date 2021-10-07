@@ -113,7 +113,7 @@ public class DatasetParser {
                         Activity activity = activities.get(n);
 
                         // if we have used all the data in the plt file continue to the next one
-                        if (trackPointList.size() - 1 == cursorPos) {
+                        if (trackPointList.size() - 1 < cursorPos) {
                             break;
                         }
 
@@ -155,18 +155,22 @@ public class DatasetParser {
                                 validActivities.add(miniAct);
                             }
                             // snip the marked label zone and add it to the valid activities list.
-                            List<TrackPoint> actPoints = trackPointList.subList(cutFrom, cutTo);
+                            List<TrackPoint> actPoints = trackPointList.subList(cutFrom, cutTo + 1);
                             activity.setTrackPoints(actPoints);
                             validActivities.add(activity);
                             activities.remove(activity);
-                            cursorPos = cutTo; // move the cursor so we don't scan this aria again
+                            cursorPos = cutTo + 1; // move the cursor so we don't scan this aria again
                         }
                     }
                     // the list is either iterated through or no more labels can be fit to the plt file
 
-                    if (cursorPos != trackPointList.size()) {
+                    if (cursorPos < trackPointList.size() - 1) {
                         // if we haven't scanned the entire file add the un scanned aria as a new activity.
                         Activity activity = new Activity();
+                        var      a        = cursorPos - trackPointList.size() - 1;
+                        if (a == 1) {
+                            System.out.println("ALLALALALAL");
+                        }
                         activity.setStartDateTime(trackPointList.get(cursorPos).getDateTime());
                         activity.setEndDateTime(trackPointList.get(trackPointList.size() - 1).getDateTime());
                         activity.setTrackPoints(trackPointList.subList(cursorPos, trackPointList.size() - 1));
