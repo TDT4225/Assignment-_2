@@ -275,13 +275,13 @@ public class Assignment2Tasks {
 
     public static void task2(Connection connection) throws SQLException {
         String query = """
-                       SELECT AVG(t.activity_count) AS avg, MIN(t.activity_count) as min, MAX(t.activity_count) as max
+                       SELECT AVG(t.activity_count) AS avg, MIN(t.activity_count) AS min, MAX(t.activity_count) AS max
                        FROM (
-                            SELECT u.id, count(a.user_id) as activity_count
+                            SELECT u.id, COUNT(a.user_id) AS activity_count
                             FROM user u
-                            LEFT JOIN activity as a ON u.id = a.user_id
+                            LEFT JOIN activity AS a ON u.id = a.user_id
                             GROUP BY u.id
-                            ) as t    
+                            ) AS t    
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -309,7 +309,7 @@ public class Assignment2Tasks {
 
 
         String query = """
-                       SELECT COUNT(DISTINCT c.user_id) as num_users
+                       SELECT COUNT(DISTINCT c.user_id) AS num_users
                        FROM(SELECT user_id
                             FROM activity
                             WHERE DATEDIFF(end_date_time, start_date_time) = 1) AS c
@@ -407,7 +407,7 @@ public class Assignment2Tasks {
                        WHERE transportation_mode IS NOT NULL
                        GROUP BY transportation_mode;        
                        """;
-        ResultSet resultSet = connection.createStatement().executeQuery(query);
+        ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 8");
         simpleTable.display();
@@ -548,22 +548,22 @@ public class Assignment2Tasks {
 
     public static void task11(Connection connection) throws SQLException {
         String query = """
-                       WITH delta_alt_act AS (
-                           WITH delta_alt_tps AS (
-                               SELECT track_point.id, track_point.activity_id , LEAD(track_point.altitude) OVER (PARTITION BY track_point.activity_id ORDER BY id) - track_point.altitude AS delta_alt
-                               FROM track_point
-                               WHERE track_point.altitude != -777
-                               AND track_point.altitude IS NOT NULL
-                           )
+                       WITH delta_alt_tps AS (
+                           SELECT track_point.id, track_point.activity_id , LEAD(track_point.altitude) OVER (PARTITION BY track_point.activity_id ORDER BY id) - track_point.altitude AS delta_alt
+                           FROM track_point
+                           WHERE track_point.altitude != -777
+                           AND track_point.altitude IS NOT NULL
+                       ),
+                       delta_alt_act AS (
                            SELECT delta_alt_tps.activity_id, SUM(IF(delta_alt_tps.delta_alt > 0, delta_alt_tps.delta_alt, 0)) AS altitude_gain
                            FROM delta_alt_tps
                            GROUP BY delta_alt_tps.activity_id)
                        SELECT activity.user_id, (SUM(delta_alt_act.altitude_gain)/ 3.2808) AS user_altitude_gain_m
                        FROM activity
-                       JOIN delta_alt_act ON activity.id = delta_alt_act.activity_id
+                                JOIN delta_alt_act ON activity.id = delta_alt_act.activity_id
                        GROUP BY activity.user_id
                        ORDER BY  user_altitude_gain_m DESC
-                       LIMIT 20;                
+                       LIMIT 20;  
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -573,20 +573,25 @@ public class Assignment2Tasks {
 
     public static void task12(Connection connection) throws SQLException {
         String query = """
-                       SELECT DISTINCT user_id, COUNT(user_id) num_invalid_activities
-                       FROM user
-                                INNER JOIN activity a ON user.id = a.user_id
-                       WHERE a.id IN (
-                           SELECT tp.activity_id
-                           FROM track_point tp
-                                    INNER JOIN (
-                                        SELECT LAG(track_point.id, 1) OVER (ORDER BY track_point.id) AS lagid, track_point.* FROM track_point) tp2
-                                               ON tp.id = tp2.lagid
-                                                   AND tp.activity_id = tp2.activity_id
-                                                   AND MINUTE(TIMEDIFF(tp.date_time, tp2.date_time)) >= 5
-                           GROUP BY tp.activity_id
+                       WITH shifted_tps AS (
+                           SELECT
+                               track_point.activity_id,
+                               track_point.date_time,
+                               LEAD(track_point.date_time)
+                                   OVER (PARTITION BY track_point.activity_id ORDER BY track_point.id) AS shifted_time
+                           FROM
+                               track_point
                        )
-                       GROUP BY user_id;
+                       SELECT activity.user_id, COUNT(*) AS num_invalid_activities
+                       FROM (
+                               SELECT shifted_tps.activity_id, MINUTE(TIMEDIFF(shifted_tps.date_time, shifted_tps.shifted_time)) AS td
+                               FROM shifted_tps
+                               WHERE MINUTE(TIMEDIFF(shifted_tps.date_time, shifted_tps.shifted_time)) > 5
+                       ) AS invalid_acts
+                       INNER JOIN activity
+                       ON invalid_acts.activity_id = activity.id
+                       GROUP BY activity.user_id
+                       ORDER BY num_invalid_activities DESC;
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
