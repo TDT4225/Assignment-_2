@@ -30,18 +30,20 @@ import java.util.stream.Collectors;
  * @param <T> the type of the items in the table.
  */
 public class SimpleTable<T> {
-    private ArrayList<T> tableItems;
-    private ArrayList<Column<T>> cols;
+    private final ArrayList<T> tableItems;
+    private final ArrayList<Column<T>> cols;
 
     private String title;
 
     private boolean prettyPrint;
     private boolean rowSeparators;
-    private HashMap<String, String> tableChars;
+    private final HashMap<String, String> tableChars;
 
     private boolean showRowIndex;
 
     private int currentDisplayRow;
+
+    private int topPaddingLines = 0;
 
     /**
      * constructing the SimpleTable
@@ -130,6 +132,15 @@ public class SimpleTable<T> {
      */
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    /**
+     * Sets the number of empty lines to print before displaying the table.
+     *
+     * @param topPaddingLines number of empty lines to print before displaying the table.
+     */
+    public void setTopPaddingLines(int topPaddingLines) {
+        this.topPaddingLines = topPaddingLines;
     }
 
     /**
@@ -236,6 +247,11 @@ public class SimpleTable<T> {
         if (! tableItems.isEmpty()) {
             cols.stream().parallel().forEach(c -> c.fitCellSize(tableItems));
         }
+
+        for (int i = 0; i < this.topPaddingLines; i++) {
+            System.out.println();
+        }
+
         this.currentDisplayRow = 0;
 
         String headerRow  = this.makeRow(cols.stream().map(Column::getFormattedHeader).collect(Collectors.joining()));

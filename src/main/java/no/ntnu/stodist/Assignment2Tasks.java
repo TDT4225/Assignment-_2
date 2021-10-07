@@ -142,6 +142,12 @@ public class Assignment2Tasks {
 
         List<User> users = datasetParser.parseDataset(datasetDir);
 
+        //        users.stream()
+        //             .filter(user -> user.getId() == 113)
+        //             .forEach(user -> user.getActivities()
+        //                                  .forEach(activity -> System.out.println(activity.getTransportationMode())));
+        //        System.exit(0);
+
         StringBuilder userQueryStringBuilder = new StringBuilder(userQueryBase);
         StringBuilder actQueryStringBuilder  = new StringBuilder(actQueryBase);
 
@@ -251,6 +257,7 @@ public class Assignment2Tasks {
         }
 
         simpleTable.getCols().addAll(tabelCols);
+        simpleTable.setTopPaddingLines(1);
         simpleTable.setItems(tabelData);
         return simpleTable;
 
@@ -258,7 +265,6 @@ public class Assignment2Tasks {
     }
 
     public static void task1(Connection connection) throws SQLException {
-
         String query = """
                        SELECT
                           (SELECT COUNT(*) FROM user) AS users,
@@ -270,7 +276,6 @@ public class Assignment2Tasks {
         SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 1");
         simpleTable.display();
-
     }
 
     public static void task2(Connection connection) throws SQLException {
@@ -306,8 +311,6 @@ public class Assignment2Tasks {
     }
 
     public static void task4(Connection connection) throws SQLException {
-
-
         String query = """
                        SELECT COUNT(DISTINCT c.user_id) AS num_users
                        FROM(SELECT user_id
@@ -340,7 +343,7 @@ public class Assignment2Tasks {
         resultSet.next();
 
         if (! resultSet.next()) {
-
+            System.out.println("Task 5");
             System.out.println("no results");
         } else {
             SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -349,10 +352,7 @@ public class Assignment2Tasks {
         }
     }
 
-    //øystein
     public static void task6(Connection connection) throws SQLException {
-        final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
         String query = """
                        WITH tps AS (
                            SELECT user_id, activity_id,tp.id AS act_id, lat, lon, date_time
@@ -363,17 +363,13 @@ public class Assignment2Tasks {
                        FROM tps
                        INNER JOIN tps AS tps2
                        ON tps.user_id != tps2.user_id
-                       AND SECOND(TIME_FORMAT(ABS(TIMEDIFF(tps.date_time, tps2.date_time)))) < 60
+                       AND SECOND(ABS(TIMEDIFF(tps.date_time, tps2.date_time))) < 60
                        AND ST_DISTANCE(POINT(tps.lat, tps.lon), POINT(tps2.lat, tps2.lon)) < 100;                    
                        """;
-        ResultSet t = connection.createStatement().executeQuery(query);
-
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
         simpleTable.setTitle("Task 6");
         simpleTable.display();
-
-
     }
 
     public static void task7(Connection connection) throws SQLException {
@@ -398,9 +394,6 @@ public class Assignment2Tasks {
 
 
     public static void task8(Connection connection) throws SQLException {
-
-        System.out.println("Task8");
-
         String query = """
                        SELECT transportation_mode, COUNT(DISTINCT user_id)
                        FROM activity
@@ -494,7 +487,7 @@ public class Assignment2Tasks {
     public static void task10(Connection connection) throws SQLException {
         String query = """
                        SELECT tp.*
-                       FROM (SELECT * FROM user WHERE user.id = 112) AS u
+                       FROM (SELECT * FROM user WHERE user.id = 113) AS u # we use 113 instead of 112 because the indexes are shifted
                        INNER JOIN (
                            SELECT *
                            FROM activity

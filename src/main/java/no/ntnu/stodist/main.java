@@ -16,13 +16,13 @@ public class main {
 
             Connection connection = db_connection.getConnection();
             Assignment2Tasks.crateTables(connection);
-            Assignment2Tasks.insertData(connection);
+            //Assignment2Tasks.insertData(connection);
             Assignment2Tasks.task1(connection);
             Assignment2Tasks.task2(connection);
             Assignment2Tasks.task3(connection);
             Assignment2Tasks.task4(connection);
             Assignment2Tasks.task5(connection);
-            Assignment2Tasks.task6(connection);
+            //Assignment2Tasks.task6(connection);
             Assignment2Tasks.task7(connection);
             Assignment2Tasks.task8(connection);
             Assignment2Tasks.task9(connection);
