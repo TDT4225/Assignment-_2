@@ -275,10 +275,13 @@ public class Assignment2Tasks {
 
     public static void task2(Connection connection) throws SQLException {
         String query = """
-                       SELECT AVG(a.count) AS avg, MIN(a.count) AS min, MAX(a.count) AS max
-                       FROM ( SELECT COUNT(*) AS count, user_id
-                               FROM activity
-                               GROUP BY user_id) AS a
+                       SELECT AVG(t.activity_count) AS avg, MIN(t.activity_count) as min, MAX(t.activity_count) as max
+                       FROM (
+                            SELECT u.id, count(a.user_id) as activity_count
+                            FROM user u
+                            LEFT JOIN activity as a ON u.id = a.user_id
+                            GROUP BY u.id
+                            ) as t    
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -306,7 +309,7 @@ public class Assignment2Tasks {
 
 
         String query = """
-                       SELECT COUNT(DISTINCT c.user_id)
+                       SELECT COUNT(DISTINCT c.user_id) as num_users
                        FROM(SELECT user_id
                             FROM activity
                             WHERE DATEDIFF(end_date_time, start_date_time) = 1) AS c
@@ -404,8 +407,10 @@ public class Assignment2Tasks {
                        WHERE transportation_mode IS NOT NULL
                        GROUP BY transportation_mode;        
                        """;
-        ResultSet t = connection.createStatement().executeQuery(query);
-
+        ResultSet resultSet = connection.createStatement().executeQuery(query);
+        SimpleTable<List<String>> simpleTable = makeResultSetTable(resultSet);
+        simpleTable.setTitle("Task 8");
+        simpleTable.display();
     }
 
     private static void task9a(Connection connection) throws SQLException {
