@@ -23,37 +23,33 @@ public class DatasetParser {
     private final DateTimeFormatter labelDateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
     private final DateTimeFormatter pointDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-ddHH:mm:ss");
 
-    public static void main(String[] args) {
-        try {
-            var a = new File("/home/trygve/development/skole/stodis/Assignment_2/datasett/Data");
-            var b = new DatasetParser().parseDataset(a);
-
-
-            b.stream()
-             .filter(user -> user.getId() == 111)
-             .forEach(user -> user.getActivities()
-                                  .forEach(activity -> System.out.println(activity.getTransportationMode())));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
+    /**
+     * Pares the geo life dataset in the provided path
+     *
+     * @param rootDir the root dir where the dataset is stored
+     *
+     * @return A list of the users parsed from the dataset.
+     * @throws IOException
+     */
     public List<User> parseDataset(File rootDir) throws IOException {
-
         ArrayList<User> retList   = new ArrayList<>();
         var             usersDirs = Files.list(rootDir.toPath()).sorted().toList();
 
         for (Path path : usersDirs) {
             retList.add(this.parseUserDir(path.toFile()));
         }
-
-
         return retList;
 
 
     }
 
+    /**
+     * Parses the dir containing the plots for a single user
+     *
+     * @param userDir the dir containing the data to parse
+     *
+     * @return The {@link User} whose data is stored in the provided dir
+     */
     public User parseUserDir(File userDir) {
         try {
             User user = new User();
@@ -62,6 +58,7 @@ public class DatasetParser {
             File           labelsFile = new File(userDir, labelFileName);
             List<Activity> activities = new ArrayList<>();
 
+            // if there is a label file we need to scan it
             if (labelsFile.exists()) {
                 user.setHasLabels(true);
                 BufferedReader reader = new BufferedReader(new FileReader(labelsFile));
@@ -86,6 +83,7 @@ public class DatasetParser {
 
             List<File> fileList = Files.list(new File(userDir, dataDirName).toPath()).map(Path::toFile).toList();
 
+            // Parse the tracking point files in parallel
             List<List<TrackPoint>> trackPointListList = fileList.stream()
                                                                 .parallel()
                                                                 .filter(file -> {
@@ -99,14 +97,14 @@ public class DatasetParser {
                                                                 })
                                                                 .map(this::parsePltFile)
                                                                 .sorted(Comparator.comparing(o -> o.get(0)
-                                                                                                   .getDateTime()))
+                                                                                                   .getDateTime())) // they may be out of order, so we need to sort them
                                                                 .collect(Collectors.toCollection(ArrayList::new));
 
             List<Activity> validActivities = new ArrayList<>();
 
-            // approch A merge the lists and seek-find the activities
             if (activities.size() > 0) {
 
+                // we reverse the activities list, so we can safely iterate in reverse while eliminating of the same list.
                 Collections.reverse(activities);
                 for (List<TrackPoint> trackPointList : trackPointListList) {
                     int cursorPos = 0;
@@ -114,35 +112,41 @@ public class DatasetParser {
                     for (int n = actSize - 1; n >= 0; n--) {
                         Activity activity = activities.get(n);
 
+                        // if we have used all the data in the plt file continue to the next one
                         if (trackPointList.size() - 1 == cursorPos) {
                             break;
                         }
 
-                        // test if the activity matches perfectly
                         int cutFrom        = - 1;
                         int cutTo          = - 1;
                         int trackPointSize = trackPointList.size();
                         for (int i = cursorPos; i < trackPointSize; i++) {
                             if (trackPointList.get(i).getDateTime().compareTo(activity.getEndDateTime()) > 0) {
-                                // if the end time of the target is before the current point stop
+                                // if the end time of the target activity is before the current point there is no
+                                //      point to continue iterating, so we continue to the next activity
                                 break;
                             }
                             if (cutFrom == - 1) {
                                 if (trackPointList.get(i).getDateTime().equals(activity.getStartDateTime())) {
+                                    // fond a exact match for start point. We now look for the end point
                                     cutFrom = i;
                                 }
                             } else {
                                 if (trackPointList.get(i).getDateTime().equals(activity.getEndDateTime())) {
                                     cutTo = i;
+                                    // end point is fond stop searching for this activity
                                     break;
                                 }
                             }
                         }
 
-                        // found a section to cut
-                        if (cutFrom != - 1 && cutTo != - 1) {
-                            if (cutFrom != cursorPos) {
 
+                        if (cutFrom != - 1 && cutTo != - 1) {
+                            // we have found some secton that matches a label exactly
+                            if (cutFrom != cursorPos) {
+                                // if the cut is not from the start pos there is an unlabeled section before the one to cut
+                                //      because the activities are sorted according to start date we know there are
+                                //      no label for this entry.
                                 List<TrackPoint> actPoints = trackPointList.subList(cursorPos, cutFrom);
                                 Activity         miniAct   = new Activity();
                                 miniAct.setStartDateTime(actPoints.get(0).getDateTime());
@@ -150,26 +154,27 @@ public class DatasetParser {
                                 miniAct.setTrackPoints(actPoints);
                                 validActivities.add(miniAct);
                             }
+                            // snip the marked label zone and add it to the valid activities list.
                             List<TrackPoint> actPoints = trackPointList.subList(cutFrom, cutTo);
                             activity.setTrackPoints(actPoints);
                             validActivities.add(activity);
                             activities.remove(activity);
-                            cursorPos = cutTo;
+                            cursorPos = cutTo; // move the cursor so we don't scan this aria again
                         }
                     }
-                    // the list is either iterated through or no more labels can be fit
+                    // the list is either iterated through or no more labels can be fit to the plt file
 
-                    if (cursorPos != trackPointList.size() - 1) {
+                    if (cursorPos != trackPointList.size()) {
+                        // if we haven't scanned the entire file add the un scanned aria as a new activity.
                         Activity activity = new Activity();
                         activity.setStartDateTime(trackPointList.get(cursorPos).getDateTime());
                         activity.setEndDateTime(trackPointList.get(trackPointList.size() - 1).getDateTime());
                         activity.setTrackPoints(trackPointList.subList(cursorPos, trackPointList.size() - 1));
                         validActivities.add(activity);
                     }
-
-
                 }
             } else {
+                // if there are no label file simply add an activity for each plt file.
                 for (List<TrackPoint> trackPointList : trackPointListList) {
                     Activity activity = new Activity();
                     activity.setStartDateTime(trackPointList.get(0).getDateTime());
@@ -188,6 +193,13 @@ public class DatasetParser {
         }
     }
 
+    /**
+     * Scans the provided plt file and returns a list with its track points.
+     *
+     * @param pltFile the file to scan.
+     *
+     * @return a list with the track points.
+     */
     private List<TrackPoint> parsePltFile(File pltFile) {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(pltFile));
