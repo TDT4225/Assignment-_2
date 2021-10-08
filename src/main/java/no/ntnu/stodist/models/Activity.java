@@ -29,6 +29,10 @@ public class Activity {
     private String transportationMode;
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
+    
+    public void addTrackPoint (TrackPoint trackPoint) {
+        this.trackPoints.add(trackPoint);
+    }
 
     public Optional<String> getTransportationMode() {
         return Optional.ofNullable(transportationMode);
