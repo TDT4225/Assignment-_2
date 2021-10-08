@@ -3,6 +3,7 @@ package no.ntnu.stodist.models;
 import lombok.Data;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @Data
 public class User {
@@ -19,5 +20,9 @@ public class User {
 
     private int id;
     private boolean hasLabels;
-    private List<Activity> activities;
+    private List<Activity> activities =  new ArrayList<>();
+    
+    public void addActivity (Activity activity) {
+        this.activities.add(activity);
+    }
 }
