@@ -499,8 +499,8 @@ public class Assignment2Tasks {
                        FROM tps
                        INNER JOIN tps AS tps2
                        ON tps.user_id != tps2.user_id
-                       AND SECOND(ABS(TIMEDIFF(tps.date_time, tps2.date_time))) < 60
-                       AND ST_DISTANCE(POINT(tps.lat, tps.lon), POINT(tps2.lat, tps2.lon)) < 100;                    
+                       AND SECOND(ABS(TIMEDIFF(tps.date_time, tps2.date_time))) <= 60
+                       AND ST_DISTANCE(POINT(tps.lat, tps.lon), POINT(tps2.lat, tps2.lon)) <= 100;                    
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -546,8 +546,8 @@ public class Assignment2Tasks {
         String query = """
                        SELECT COUNT(*) AS num_activites, YEAR(activity.start_date_time) AS year, MONTH(activity.start_date_time) AS month
                        FROM activity
-                       GROUP BY YEAR(activity.start_date_time), MONTH(activity.start_date_time)
-                       ORDER BY COUNT(*) DESC
+                       GROUP BY year, month
+                       ORDER BY num_activities DESC
                        LIMIT 1;
                        """;
         ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
@@ -563,8 +563,8 @@ public class Assignment2Tasks {
                             activity AS a,
                             (SELECT COUNT(*) AS num_activites, YEAR(activity.start_date_time) AS year, MONTH(activity.start_date_time) AS month
                              FROM activity
-                             GROUP BY YEAR(activity.start_date_time), MONTH(activity.start_date_time)
-                             ORDER BY COUNT(*) DESC
+                             GROUP BY year, month
+                             ORDER BY num_activities DESC
                              LIMIT 1) AS best_t
                        WHERE YEAR(a.start_date_time) = best_t.year
                        AND MONTH(a.start_date_time) = best_t.month
