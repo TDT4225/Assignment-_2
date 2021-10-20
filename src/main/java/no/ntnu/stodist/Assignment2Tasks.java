@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
+import java.util.stream.Collectors;
 
 public class Assignment2Tasks {
 
@@ -90,6 +90,123 @@ public class Assignment2Tasks {
                                          LocalDateTime t2_end
     ) {
         return t1_start.isBefore(t2_end) && t2_start.isBefore(t1_end);
+    }
+    
+    /**
+     * Checks whether the user has overlap in space (100 meter) and time (60 seconds) with another user
+     *
+     * @param connection connection string to the database
+     * @param user user object of the user to check overlap for
+     * @param otherUsers user objects that we want to check user for overlap with
+     *
+     * @return Returns true if the user has overlap in space and time and false if not
+     */
+    private static boolean hasTimeAndSpaceOverlap(Connection connection, User user, List<User> otherUsers) {
+        try {
+            System.out.println("Checking for time and space overlap for " + user.getId());
+            List<Activity> currentUserActivities = user.getActivities();
+            for (Activity currentUserActivity : currentUserActivities) {
+                for (User otherUser : otherUsers) {
+                    List<Activity> otherUserActivities = otherUser.getActivities();
+                    for (Activity otherUserActivity : otherUserActivities) {
+                        /*
+                                        ***  CALCULATION OF OVERLAP  ***
+                        */
+                        int numTrackPointsCurrentUserActivity = currentUserActivity.getTrackPoints().size();
+                        int numTrackPointsOtherUserActivity = otherUserActivity.getTrackPoints().size();
+                        LocalDateTime currentUserTrackPointInitialDateTime = currentUserActivity.getTrackPoints().get(0).getDateTime();
+                        LocalDateTime otherUserTrackPointInitialDateTime = otherUserActivity.getTrackPoints().get(0).getDateTime();
+                        LocalDateTime datetimeStartPoint = currentUserTrackPointInitialDateTime.isBefore(otherUserTrackPointInitialDateTime) ? currentUserTrackPointInitialDateTime : otherUserTrackPointInitialDateTime;
+                        int numOfIterations = numTrackPointsCurrentUserActivity >= numTrackPointsOtherUserActivity ? numTrackPointsOtherUserActivity : numTrackPointsCurrentUserActivity;
+                        for (int i = 0; i < numOfIterations; i++) {
+                            double lat1 = currentUserActivity.getTrackPoints().get(i).getLatitude();
+                            double lon1 = currentUserActivity.getTrackPoints().get(i).getLongitude();
+                            double lat2 = otherUserActivity.getTrackPoints().get(i).getLatitude();
+                            double lon2 = otherUserActivity.getTrackPoints().get(i).getLongitude();
+                            if (haversineDistance(lat1, lat2, lon1, lon2) <= 100) {
+                                //System.out.println("Space overlap detected!");
+                                LocalDateTime datetimeEndPoint = otherUserTrackPointInitialDateTime.isBefore(currentUserTrackPointInitialDateTime) ? otherUserTrackPointInitialDateTime : currentUserTrackPointInitialDateTime;
+                                long secondsBetween = ChronoUnit.SECONDS.between(datetimeStartPoint, datetimeEndPoint);
+                                if (secondsBetween >= 60) {
+                                    System.out.println("Space and time overlap detected!");
+                                    return true;
+                                }
+                            } else {
+                                LocalDateTime currentUserTrackPointCurrentDateTime = currentUserActivity.getTrackPoints().get(i).getDateTime();
+                                LocalDateTime otherUserTrackPointCurrentDateTime = otherUserActivity.getTrackPoints().get(i).getDateTime();
+                                datetimeStartPoint = currentUserTrackPointCurrentDateTime.isBefore(otherUserTrackPointCurrentDateTime) ? currentUserTrackPointCurrentDateTime : otherUserTrackPointCurrentDateTime;
+                            }
+                        }
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Retrieves all data about users, activities, and trackpoints from the database and stores it in user, activity, and trackpoint objects
+     *
+     * @param connection connection string to the database
+     *
+     * @return Returns a list of user objects
+     */
+    public static List<User> getAllUsers (Connection connection) throws SQLException {
+        final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        // Get id of all users
+        String query = """
+                       SELECT user.id, activity.start_date_time, activity.id as activity_id, activity.end_date_time, track_point.id as track_point_id, track_point.lat, track_point.lon, track_point.date_time
+                       FROM user
+                       INNER JOIN activity
+                       ON activity.user_id = user.id
+                       INNER JOIN track_point 
+                       ON track_point.activity_id = activity.id
+                       ORDER BY user.id, activity_id            
+                       """;
+        ResultSet resultSet = connection.createStatement().executeQuery(query);
+        List<User> users = new ArrayList<User>();
+        int previousUserId = 1;
+        int previousActivityId = 1;
+        User currentUser = new User();
+        Activity currentActivity = new Activity();
+        while (resultSet.next()) {
+            System.out.println("User id: " + previousUserId);
+            if (resultSet.getRow() == 1) {
+                previousUserId = Integer.parseInt(resultSet.getString("id"));
+                currentUser.setId(previousUserId);
+                previousActivityId = resultSet.getInt("activity_id");
+                currentActivity.setId(previousActivityId);
+            }
+            int currentUserId = Integer.parseInt(resultSet.getString("id"));
+            int currentActivityId = resultSet.getInt("activity_id");
+            if (currentUserId != previousUserId) {
+                users.add(currentUser);
+                currentUser = new User();
+                currentUser.setId(currentUserId);
+            }
+            if (currentActivityId != previousActivityId) {
+                currentUser.addActivity(currentActivity);
+                currentActivity = new Activity();
+                currentActivity.setId(currentActivityId);
+                currentActivity.setStartDateTime(LocalDateTime.parse(resultSet.getString("start_date_time"), dateTimeFormatter));
+                currentActivity.setEndDateTime(LocalDateTime.parse(resultSet.getString("end_date_time"), dateTimeFormatter));
+            }
+            TrackPoint trackPoint = new TrackPoint();
+            trackPoint.setId(resultSet.getInt("track_point_id"));
+            trackPoint.setLatitude(resultSet.getDouble("lat"));
+            trackPoint.setLongitude(resultSet.getDouble("lon"));
+            trackPoint.setDateTime(LocalDateTime.parse(resultSet.getString("date_time"), dateTimeFormatter));
+            currentActivity.addTrackPoint(trackPoint);
+            if (resultSet.isLast()) {
+                users.add(currentUser);
+            }
+            previousUserId = currentUserId;
+            previousActivityId = currentActivityId;
+        }
+        return users;
     }
 
     public static void crateTables(Connection connection) throws SQLException {
@@ -348,6 +465,28 @@ public class Assignment2Tasks {
             simpleTable.display();
         }
     }
+    
+    public static void task6FirstApproach(Connection connection) throws SQLException {
+        // Get all users
+        List<User> users = getAllUsers(connection);
+        System.out.println("Done!");
+        // Initialize counter
+        int numUsersWithOverlap = 0;
+        // Loop over userIds
+        for (User user : users) {
+            System.out.println("User: " + user.getId());
+            List<User> otherUsers = users.stream().filter(userObj -> userObj.getId() != user.getId()).collect(Collectors.toList());
+            if (hasTimeAndSpaceOverlap(connection, user, otherUsers)) {
+                numUsersWithOverlap++;
+                System.out.println("User " + user.getId() + " has overlap with another user");
+            } else {
+                System.out.println("User " + user.getId() + " has no overlap with another user");
+            }
+        }
+        // Print result
+        System.out.println("Task 6");
+        System.out.println("Number of users with time and space overlap: " + numUsersWithOverlap);
+    }
 
     public static void task6(Connection connection) throws SQLException {
         String query = """
@@ -360,8 +499,8 @@ public class Assignment2Tasks {
                        FROM tps
                        INNER JOIN tps AS tps2
                        ON tps.user_id != tps2.user_id
-                       AND SECOND(ABS(TIMEDIFF(tps.date_time, tps2.date_time))) < 60
-                       AND ST_DISTANCE(POINT(tps.lat, tps.lon), POINT(tps2.lat, tps2.lon)) < 100;                    
+                       AND SECOND(ABS(TIMEDIFF(tps.date_time, tps2.date_time))) <= 60
+                       AND ST_DISTANCE(POINT(tps.lat, tps.lon), POINT(tps2.lat, tps2.lon)) <= 100;                    
                        """;
         ResultSet   resultSet   = connection.createStatement().executeQuery(query);
         SimpleTable simpleTable = makeResultSetTable(resultSet);
@@ -407,8 +546,8 @@ public class Assignment2Tasks {
         String query = """
                        SELECT COUNT(*) AS num_activites, YEAR(activity.start_date_time) AS year, MONTH(activity.start_date_time) AS month
                        FROM activity
-                       GROUP BY YEAR(activity.start_date_time), MONTH(activity.start_date_time)
-                       ORDER BY COUNT(*) DESC
+                       GROUP BY year, month
+                       ORDER BY num_activities DESC
                        LIMIT 1;
                        """;
         ResultSet                 resultSet   = connection.createStatement().executeQuery(query);
@@ -424,8 +563,8 @@ public class Assignment2Tasks {
                             activity AS a,
                             (SELECT COUNT(*) AS num_activites, YEAR(activity.start_date_time) AS year, MONTH(activity.start_date_time) AS month
                              FROM activity
-                             GROUP BY YEAR(activity.start_date_time), MONTH(activity.start_date_time)
-                             ORDER BY COUNT(*) DESC
+                             GROUP BY year, month
+                             ORDER BY num_activities DESC
                              LIMIT 1) AS best_t
                        WHERE YEAR(a.start_date_time) = best_t.year
                        AND MONTH(a.start_date_time) = best_t.month
